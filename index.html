@@ -1,0 +1,267 @@
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="estilo.css">
+    <script src='https://d3js.org/d3.v5.min.js'></script>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Tipo de aborto en Colombia</title>
+  </head>
+  <body>
+    </br>
+    <h1>ABORTO REALIZADO DE FORMA LEGAL EN COLOMBIA</br>(2009-2017)</h1></br></br>
+    <p >El aborto o interrupción voluntaria del embarazo (IVE) es un derecho fundamental que consiste en un procedimiento ponerle fin de manera consciente a un embarazo en curso. ¿Qué es el Aborto? Muchos países son restrictivos sobre estas prácticas, lo que hace que algunas mujeres busquen interrumpir su embarazo de forma ilegal, en lugares que no necesitan cumplir con regulaciones ni condiciones de sanidad, poniendo en grave peligro su vida, su integridad y su salud.</br></br>
+
+    Según la Organización Mundial de la Salud (OMS), en los países donde las mujeres tienen acceso a servicios seguros, la probabilidad de muerte como consecuencia de un aborto es de una por cada 100.000 procedimientos.</br></br>
+
+    En Colombia desde el 2006, la Corte Constitucional en Colombia abrió la puerta al IVEs, permitiendo realizar el procedimiento cuando se incurre en alguna de estas tres circunstancias:</br>
+
+    <ol> 
+      <li>Cuando el embarazo pone en peligro la salud (física o mental) de la mujer, o su vida.</li>
+      <li>Cuando el embarazo es resultado de una violación o de incesto.</li>
+      <li>Cuando hay malformaciones del feto que son incompatibles con la vida por fuera del útero.</li>
+    </ol>
+
+    A continuación, se encuentra una visualización en la que se muestra la relación de cada departamento del país con el diagnóstico dado en el aborto realizado de forma legal, los diagnósticos reportados en la base de datos son los siguientes:</br>
+
+    <ul> 
+      <li>ABORTO MEDICO</li>
+      <li>EXTRACCION MENSTRUAL</li>
+      <li>FALLA DE LA INDUCCION MEDICA DEL ABORTO</li>
+      <li>PROBLEMAS RELACIONADOS CON EMBARAZO NO DESEADO</li>
+    </ul>
+
+    </p>
+
+    </br>
+    <h5>Por favor interactúe con la visualización</h5>
+    <svg id='viz'></svg>    
+
+    <h2>Abstracción</h2>
+    <p><b>What?</b></p>
+    <ul>
+      <li><b>Cantidad de registros inicial:</b> 39854 registros</li>
+      <li><b>Cantidad de registros agregada:</b> 34 registros</li>
+      <li><b>Dataset type:</b> Temporal</li>
+      <li><b>Variables</b>
+        <ul>
+          <li><b>Departamento:</b> Categórico
+          <li><b>Cantidad de abortos por diagnóstico:</b> Ordenado <b>-></b> Cuantitativo <b>-></b> Secuencial</li>
+        </ul>
+      </li>
+    </ul>
+    </br>
+    <p><b>Why?</b></p>
+    <ul>
+      <li><b>Tarea principal:</b> Explorar la topología que existe entre el diagnóstico y los departamentos del país. <b>[Tamara: Explore, Topology]</b></li>
+      <li><b>Tarea secundaria:</b> Identificar anomalías en los diagnósticos realizados en cada departamento. <b>[Tamara: Identify, Outliers]</b></li>
+    </ul>
+    </br>
+    <p><b>How?</b></p>
+    <ul>
+      <li><b>Tarea</b>
+        <ul>
+          <li><b>Encode</b>
+            <ul>
+              <li>Separate
+            </ul>
+          <li><b>Marcas</b>
+            <ul>
+              <li>Puntos <b>-></b> Cada punto representa un nodo el cual hace referencia a un departamento o diagnóstico dependiendo del color que se esté mostrando (Azul = Departamento, Naranja = Diagnóstico).</li>
+              <li>Líneas <b>-></b> Cada línea representa un link el cual hace referencia a la conexión que existe entre un departamento y un diagnóstico.</li>
+            </ul>
+          </li>
+          <li><b>Canales:</b>
+            <ul>
+              <li>Tono de color para diferenciar el tipo de nodo <b>[Color hue]</b></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+    </br>
+    <p><b>Insights encontrados</b></p>
+    <ul>
+      <li>Vichada es el único departamento en el que solo se han presentados abortos médicos con normalidad.</li>
+      </br>
+      <li>En Vaupés, Guainía y San Andrés, Providencia y Santa Catalina, son los 3 departamentos en los que no se ha diagnosticado una extracción menstrual ni fallas de la inducción médica del aborto.</li>
+    </ul>
+    </br>
+    
+    <script>
+      var width = 982;
+      var height = 660;
+      var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+      d3.json("datosAborto.json").then(function(graph) {
+
+        var label = {
+            'nodes': [],
+            'links': []
+        };
+
+        graph.nodes.forEach(function(d, i) {
+            label.nodes.push({node: d});
+            label.nodes.push({node: d});
+            label.links.push({
+                source: i * 2,
+                target: i * 2 + 1
+            });
+        });
+
+        var labelLayout = d3.forceSimulation(label.nodes)
+            .force("charge", d3.forceManyBody().strength(-50))
+            .force("link", d3.forceLink(label.links).distance(0).strength(2));
+
+        var graphLayout = d3.forceSimulation(graph.nodes)
+            .force("charge", d3.forceManyBody().strength(-4000))
+            .force("center", d3.forceCenter(width / 2.3, height / 2.1))
+            .force("x", d3.forceX(width / 2).strength(1))
+            .force("y", d3.forceY(height / 2).strength(1))          
+            .force("link", d3.forceLink(graph.links).id(function(d) {return d.id; }).distance(100).strength(1))
+            .on("tick", ticked);
+
+        var adjlist = [];
+
+        graph.links.forEach(function(d) {
+            adjlist[d.source.index + "-" + d.target.index] = true;
+            adjlist[d.target.index + "-" + d.source.index] = true;
+        });
+
+        function neigh(a, b) {
+            return a == b || adjlist[a + "-" + b];
+        }
+
+
+        var svg = d3.select("#viz").attr("width", width).attr("height", height);
+
+        var container = svg.append("g");
+
+        svg.call(
+            d3.zoom()
+                .scaleExtent([.1, 4])
+                .on("zoom", function() { container.attr("transform", d3.event.transform); })
+        );
+
+        var link = container.append("g").attr("class", "links")
+            .selectAll("line")
+            .data(graph.links)
+            .enter()
+            .append("line")
+            .attr("stroke", "grey")
+            .attr("stroke-width", "1px");
+
+        var node = container.append("g").attr("class", "nodes")
+            .selectAll("g")
+            .data(graph.nodes)
+            .enter()
+            .append("circle")
+            .attr("r", 5)
+            .attr("fill", function(d) { return color(d.group); })
+
+        node.on("mouseover", focus).on("mouseout", unfocus);
+
+        node.call(
+            d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended)
+        );
+
+        var labelNode = container.append("g").attr("class", "labelNodes")
+            .selectAll("text")
+            .data(label.nodes)
+            .enter()
+            .append("text")
+            .text(function(d, i) { return i % 2 == 0 ? "" : d.node.id; })
+            .style("fill", "#000000")
+            .style("font-family", "Arial")
+            .style("font-size", 12)
+            .style("pointer-events", "none"); // to prevent mouseover/drag capture
+
+        node.on("mouseover", focus).on("mouseout", unfocus);
+
+        function ticked() {
+
+            node.call(updateNode);
+            link.call(updateLink);
+
+            labelLayout.alphaTarget(0.3).restart();
+            labelNode.each(function(d, i) {
+                if(i % 2 == 0) {
+                    d.x = d.node.x;
+                    d.y = d.node.y;
+                } else {
+                    var b = this.getBBox();
+
+                    var diffX = d.x - d.node.x;
+                    var diffY = d.y - d.node.y;
+
+                    var dist = Math.sqrt(diffX * diffX + diffY * diffY);
+
+                    var shiftX = b.width * (diffX - dist) / (dist * 2);
+                    shiftX = Math.max(-b.width, Math.min(0, shiftX));
+                    var shiftY = 16;
+                    this.setAttribute("transform", "translate(" + shiftX + "," + shiftY + ")");
+                }
+            });
+            labelNode.call(updateNode);
+
+        }
+
+        function fixna(x) {
+            if (isFinite(x)) return x;
+            return 0;
+        }
+
+        function focus(d) {
+            var index = d3.select(d3.event.target).datum().index;
+            node.style("opacity", function(o) {
+                return neigh(index, o.index) ? 1 : 0.1;
+            });
+            labelNode.attr("display", function(o) {
+              return neigh(index, o.node.index) ? "block": "none";
+            });
+            link.style("opacity", function(o) {
+                return o.source.index == index || o.target.index == index ? 1 : 0.1;
+            });
+        }
+
+        function unfocus() {
+           labelNode.attr("display", "block");
+           node.style("opacity", 1);
+           link.style("opacity", 1);
+        }
+
+        function updateLink(link) {
+            link.attr("x1", function(d) { return fixna(d.source.x); })
+                .attr("y1", function(d) { return fixna(d.source.y); })
+                .attr("x2", function(d) { return fixna(d.target.x); })
+                .attr("y2", function(d) { return fixna(d.target.y); });
+        }
+
+        function updateNode(node) {
+            node.attr("transform", function(d) {
+                return "translate(" + fixna(d.x) + "," + fixna(d.y) + ")";
+            });
+        }
+
+        function dragstarted(d) {
+            d3.event.sourceEvent.stopPropagation();
+            if (!d3.event.active) graphLayout.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(d) {
+            d.fx = d3.event.x;
+            d.fy = d3.event.y;
+        }
+
+        function dragended(d) {
+            if (!d3.event.active) graphLayout.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+      }); // d3.json
+    </script>
+  </body>
+</html>
