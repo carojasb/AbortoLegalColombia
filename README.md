@@ -9,4 +9,4 @@ Autores con links: Camilo Andres Rojas Bulla
 
 link a la página del proyecto: https://carojasb.github.io/AbortoLegalColombia
 
-Un screenshot: 
+Un screenshot: https://imageshack.com/a/img923/490/CanVIT.jpg
